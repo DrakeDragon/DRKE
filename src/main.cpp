@@ -33,7 +33,7 @@ unsigned int nTransactionsUpdated = 0;
 map<uint256, CBlockIndex*> mapBlockIndex;
 uint256 hashGenesisBlock("0x00000e8f761bdcfb0a8c85c83ca5635b05409b4d80d3859cce4b21c58cbe0b78"); //mainnet
 
-static CBigNum bnProofOfWorkLimit(~uint256(0) >> 20); // LogiCoin: starting difficulty is 1 / 2^12
+static CBigNum bnProofOfWorkLimit(~uint256(0) >> 20); // DrakeDragon: starting difficulty is 1 / 2^12
 CBlockIndex* pindexGenesisBlock = NULL;
 int nBestHeight = -1;
 uint256 nBestChainWork = 0;
@@ -65,7 +65,7 @@ map<uint256, set<uint256> > mapOrphanTransactionsByPrev;
 // Constant stuff for coinbase transactions we create:
 CScript COINBASE_FLAGS;
 
-const string strMessageMagic = "LogiCoin Signed Message:\n";
+const string strMessageMagic = "DrakeDragon Signed Message:\n";
 
 double dHashesPerSec = 0.0;
 int64 nHPSTimerStart = 0;
@@ -613,7 +613,7 @@ int64 CTransaction::GetMinFee(unsigned int nBlockSize, bool fAllowFree,
             nMinFee = 0;
     }
 
-    // LogiCoin
+    // DrakeDragon
     // To limit dust spam, add nBaseFee for each output less than DUST_SOFT_LIMIT
     BOOST_FOREACH(const CTxOut& txout, vout)
         if (txout.nValue < DUST_SOFT_LIMIT)
@@ -1084,16 +1084,48 @@ uint256 static GetOrphanRoot(const CBlockHeader* pblock)
 
 int64 static GetBlockValue(int nBits, int nHeight, int64 nFees)
 {
-int64 nSubsidy = 50 * COIN;
+int64 nSubsidy = 5000 * COIN;
 
-	// Susidy is cut in half every 43200 block, Which is about every 30 days.
-	nSubsidy >>= (nHeight / 43200); 
+        if (nHeight == 1)
+                nSubsidy = 125000000 * COIN;
+
+        if (nHeight >= 2 && nHeight <= 20) // allowing Gravity Wave to Start
+                nSubsidy = 10 * COIN;
+
+        if (nHeight >= 25 && nHeight <= 60) // Up to First Hour of 5,000 Reward
+                nSubsidy = 5000 * COIN;
+
+        if (nHeight >= 61 && nHeight <= 360) // Hour 1 -> Hour 6 = 4,500 Reward
+                nSubsidy = 4500 * COIN;
+
+        if (nHeight >= 361 && nHeight <= 720) // Hour 6 -> Hour 12 = 4,000 Reward
+                nSubsidy = 4000 * COIN;
+
+        if (nHeight >= 721 && nHeight <= 1440) // Hour 12 -> Hour 24 = 3,500 Reward
+                nSubsidy = 3500 * COIN;
+
+        if (nHeight >= 1441 && nHeight <= 4320 // Hour 24 -> Day 3 = 3,000 Reward
+                nSubsidy = 3000 * COIN;
+
+        if (nHeight >= 4321 && nHeight <= 10080 // Day 3 -> Week 1 = 2,500 Reward
+                nSubsidy = 2500 * COIN; 
+
+        if (nHeight >= 10081 && nHeight <= 20160 // Week 1 -> Week 2 = 2,000 Reward
+                nSubsidy = 2000 * COIN;
+        
+        if (nHeight >= 20161 && nHeight <= 30240 // Week 2 -> Week 3 = 1,500 Reward
+                nSubsidy = 1500 * COIN;
+
+        if (nHeight >= 30241 && nHeight <= 40320 // Week 3 -> Week 4 = 1,000 Reward
+                nSubsidy = 1000 * COIN;
+
+        nSubsidy >>= (nHeight / 40320); // Every 4 Weeks Cut in Half
 
     return nSubsidy + nFees;
 }
 
-static const int64 nTargetTimespan = 24 * 60 * 60; // LogiCoin: 1 day
-static const int64 nTargetSpacing =  60; // LogiCoin: 1 Minute
+static const int64 nTargetTimespan = 24 * 60 * 60; // DrakeDragon: 1 day
+static const int64 nTargetSpacing =  60; // DrakeDragon: 1 Minute
 static const int64 nInterval = nTargetTimespan / nTargetSpacing; // 576
 
 //
@@ -1152,7 +1184,7 @@ unsigned int static GetNextWorkRequired_V1(const CBlockIndex* pindexLast, const 
         return pindexLast->nBits;
     }
 
-    // LogiCoin: This fixes an issue where a 51% attack can change difficulty at will.
+    // DrakeDragon: This fixes an issue where a 51% attack can change difficulty at will.
     // Go back the full period unless it's the first retarget after genesis. Code courtesy of Art Forz
     int blockstogoback = nInterval-1;
     if ((pindexLast->nHeight+1) != nInterval)
@@ -1325,7 +1357,7 @@ unsigned int static DarkGravityWave(const CBlockIndex* pindexLast, const CBlockH
 
 unsigned int static GetNextWorkRequired_V2(const CBlockIndex* pindexLast, const CBlockHeader *pblock)
 {
-        static const int64 BlocksTargetSpacing = 2.5 * 60; // 2.5 minutes
+        static const int64 BlocksTargetSpacing = 1 * 60; // 1 minute
         static const unsigned int TimeDaySeconds = 60 * 60 * 24;
         int64 PastSecondsMin = TimeDaySeconds * 0.025;
         int64 PastSecondsMax = TimeDaySeconds * 7;
